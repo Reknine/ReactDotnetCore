@@ -2,6 +2,7 @@ import { IActivity } from './../models/activity';
 import { observable, action, computed, configure, runInAction } from 'mobx';
 import { createContext, SyntheticEvent } from 'react';
 import agent from '../api/agent';
+import { history } from '../..';
 
 configure({ enforceActions: 'always' });
 
@@ -57,6 +58,7 @@ class ActivityStore {
     let activity = this.getActivity(id);
     if (activity) {
       this.activity = activity;
+      return activity;
     } else {
       this.loadingInital = true;
       try {
@@ -64,8 +66,10 @@ class ActivityStore {
         runInAction('getting activity', () => {
           activity.date = new Date(activity.date);
           this.activity = activity;
+          this.activityRegistry.set(activity.id, activity);
           this.loadingInital = false;
         });
+        return activity;
       } catch (error) {
         runInAction('get activity error', () => {
           this.loadingInital = false;
@@ -91,6 +95,7 @@ class ActivityStore {
         this.activityRegistry.set(activity.id, activity);
         this.submitting = false;
       });
+      history.push(`/activities/${activity.id}`);
     } catch (error) {
       runInAction('create activity error', () => {
         this.submitting = false;
@@ -108,6 +113,7 @@ class ActivityStore {
         this.activity = activity;
         this.submitting = false;
       });
+      history.push(`/activities/${activity.id}`);
     } catch (error) {
       runInAction('edit activity error', () => {
         this.submitting = false;
