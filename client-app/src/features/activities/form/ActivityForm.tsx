@@ -1,9 +1,6 @@
-import React, { useState, FormEvent, useContext, useEffect } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { Segment, Form, Button, Grid } from 'semantic-ui-react';
-import {
-  IActivityFormValues,
-  ActivityFormValues,
-} from '../../../app/models/activity';
+import { ActivityFormValues } from '../../../app/models/activity';
 import { v4 as uuid } from 'uuid';
 import ActivityStore from '../../../app/stores/activityStore';
 import { observer } from 'mobx-react-lite';
@@ -15,6 +12,27 @@ import SelectInput from '../../../app/common/SelectInput';
 import { category } from '../../../app/common/options/categoryOptions';
 import DateInput from '../../../app/common/form/DateInput';
 import { combineDateAndTime } from '../../../app/common/util/util';
+import {
+  combineValidators,
+  isRequired,
+  composeValidators,
+  hasLengthGreaterThan,
+} from 'revalidate';
+
+const validate = combineValidators({
+  title: isRequired({ message: 'The title is required' }),
+  category: isRequired('Category'),
+  description: composeValidators(
+    isRequired('Description'),
+    hasLengthGreaterThan(4)({
+      message: 'Description needs to be at least 5 characters',
+    })
+  )(),
+  city: isRequired('City'),
+  venue: isRequired('venue'),
+  date: isRequired('Date'),
+  time: isRequired('Time'),
+});
 
 interface DetailParams {
   id: string;
@@ -29,9 +47,7 @@ const ActivityForm: React.FC<RouteComponentProps<DetailParams>> = ({
     createActivity,
     editActivity,
     submitting,
-    activity: initialFormState,
     loadActivity,
-    clearActivity,
   } = activityStore;
 
   const [activity, setActivity] = useState(new ActivityFormValues());
@@ -66,65 +82,66 @@ const ActivityForm: React.FC<RouteComponentProps<DetailParams>> = ({
       <Grid.Column width={10}>
         <Segment clearing>
           <FinalForm
+            validate={validate}
             initialValues={activity}
             onSubmit={handleFinalFormSubmit}
-            render={({ handleSubmit }) => (
+            render={({ handleSubmit, invalid, pristine }) => (
               <Form onSubmit={handleSubmit} loading={loading}>
                 <Field
-                  name="title"
-                  placeholder="Title"
+                  name='title'
+                  placeholder='Title'
                   value={activity.title}
                   component={TextInput}
                 />
                 <Field
-                  name="description"
-                  placeholder="Description"
+                  name='description'
+                  placeholder='Description'
                   rows={3}
                   value={activity.description}
                   component={TextAreaInput}
                 />
                 <Field
-                  name="category"
+                  name='category'
                   options={category}
-                  placeholder="Category"
+                  placeholder='Category'
                   value={activity.category}
                   component={SelectInput}
                 />
-                <Form.Group widths="equal">
+                <Form.Group widths='equal'>
                   <Field
                     component={DateInput}
-                    name="date"
+                    name='date'
                     date={true}
-                    placeholder="Date"
+                    placeholder='Date'
                     value={activity.date}
                   />
                   <Field
                     component={DateInput}
-                    name="time"
+                    name='time'
                     time={true}
-                    placeholder="Time"
+                    placeholder='Time'
                     value={activity.date}
                   />
                 </Form.Group>
                 <Field
-                  name="city"
-                  placeholder="City"
+                  name='city'
+                  placeholder='City'
                   value={activity.city}
                   component={TextInput}
                 />
                 <Field
-                  name="venue"
-                  placeholder="Venue"
+                  name='venue'
+                  placeholder='Venue'
                   value={activity.venue}
                   component={TextInput}
                 />
                 <Button
                   loading={submitting}
-                  disabled={loading}
-                  floated="right"
+                  disabled={loading || invalid || pristine}
+                  floated='right'
                   positive
-                  type="submit"
-                  content="Submit"
+                  type='submit'
+                  content='Submit'
                 />
                 <Button
                   onClick={
@@ -133,9 +150,9 @@ const ActivityForm: React.FC<RouteComponentProps<DetailParams>> = ({
                       : () => history.push('/activities')
                   }
                   disabled={loading}
-                  floated="right"
-                  type="button"
-                  content="Cancel"
+                  floated='right'
+                  type='button'
+                  content='Cancel'
                 />
               </Form>
             )}
